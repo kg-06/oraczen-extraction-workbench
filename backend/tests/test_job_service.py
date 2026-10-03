@@ -73,3 +73,58 @@ async def test_job_tracks_needs_review():
 
     # tkt_0020 fails twice and requires review.
     assert updated_job.needs_review == 1
+    
+@pytest.mark.asyncio
+async def test_job_stores_extraction_results():
+    tickets = [
+        make_ticket("ticket_1"),
+        make_ticket("ticket_2"),
+    ]
+
+    provider = MockExtractionProvider(delay_ms=0)
+    extraction_service = ExtractionService(provider)
+    job_service = JobService(extraction_service, tickets)
+
+    job = job_service.create_job(
+        ["ticket_1", "ticket_2"]
+    )
+
+    await asyncio.sleep(0.05)
+
+    results = job_service.get_results(job.id)
+
+    assert len(results) == 2
+
+    for result in results:
+        assert result.ticket_id in ["ticket_1", "ticket_2"]
+        assert result.status == "completed"
+        assert result.record is not None
+        assert result.attempts == 1
+        
+@pytest.mark.asyncio
+async def test_job_stores_needs_review_result():
+    tickets = [
+        make_ticket("tkt_0020"),
+    ]
+
+    provider = MockExtractionProvider(delay_ms=0)
+    extraction_service = ExtractionService(provider)
+    job_service = JobService(extraction_service, tickets)
+
+    job = job_service.create_job(
+        ["tkt_0020"]
+    )
+
+    await asyncio.sleep(0.05)
+
+    results = job_service.get_results(job.id)
+
+    assert len(results) == 1
+
+    result = results[0]
+
+    assert result.ticket_id == "tkt_0020"
+    assert result.status == "needs_review"
+    assert result.record is None
+    assert result.attempts == 2
+    assert len(result.validation_errors) == 2
