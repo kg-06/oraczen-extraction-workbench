@@ -237,6 +237,15 @@ export default function Home() {
           result={selectedResult}
           ticket={selectedTicket}
           onClose={() => setSelectedResult(null)}
+          onUpdated={(updatedResult) => {
+            setSelectedResult(updatedResult);
+
+            setResults((current) =>
+              current.map((result) =>
+                result.id === updatedResult.id ? updatedResult : result,
+              ),
+            );
+          }}
         />
       )}
 

@@ -2,12 +2,13 @@ import asyncio
 import csv
 import io
 from uuid import uuid4
-
+from pydantic import ValidationError
 from app.models.job import Job, JobStatus
 from app.models.job_result import JobResult
 from app.models.ticket import Ticket
 from app.services.extraction_service import ExtractionService
 from app.models.extraction import ExtractedRecord
+
 
 
 class JobService:
@@ -81,30 +82,40 @@ class JobService:
 
         job.status = JobStatus.COMPLETED
         
-    def update_result(
-    self,
-    result_id: str,
-    updates: dict,
-) -> JobResult | None:
-
+    def update_result(self,result_id: str,updates: dict,) -> JobResult | None:
         for results in self.results.values():
             for result in results:
-
                 if result.id != result_id:
                     continue
 
-                if result.record is None:
-                    return None
+                current_data = (
+                    result.record.model_dump()
+                    if result.record is not None
+                    else {
+                        "company": "",
+                        "product": "",
+                        "category": "",
+                        "severity": "",
+                        "requested_action": "",
+                        "refund_amount": None,
+                        "deadline": None,
+                        "escalated": False,
+                    }
+                )
 
-                updated_data = result.record.model_dump()
-
-                for field, value in updates.items():
+                for key, value in updates.items():
                     if value is not None:
-                        updated_data[field] = value
+                        current_data[key] = value
 
-                updated_record = ExtractedRecord.model_validate(updated_data)
+                try:
+                    updated_record = ExtractedRecord.model_validate(
+                        current_data
+                    )
+                except ValidationError as error:
+                    raise ValueError(str(error))
 
                 result.record = updated_record
+                result.status = "completed"
                 result.human_edited = True
 
                 return result

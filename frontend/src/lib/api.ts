@@ -65,3 +65,38 @@ export async function getJobResults(
 
   return response.json();
 }
+
+export async function updateRecord(
+  recordId: string,
+  updates: Partial<{
+    company: string;
+    product: string;
+    category: string;
+    severity: string;
+    requested_action: string;
+    refund_amount: number | null;
+    deadline: string | null;
+    escalated: boolean;
+  }>,
+): Promise<JobResult> {
+  const response = await fetch(
+    `${API_URL}/api/records/${recordId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updates),
+    },
+  );
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+
+    throw new Error(
+      errorBody?.detail || "Failed to update record",
+    );
+  }
+
+  return response.json();
+}
