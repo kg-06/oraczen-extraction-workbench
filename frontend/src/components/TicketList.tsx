@@ -13,27 +13,44 @@ export default function TicketList({
   selectedIds,
   onToggle,
 }: TicketListProps) {
+  if (tickets.length === 0) {
+    return (
+      <div className="empty-state">
+        No tickets match your current filters.
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div className="ticket-grid">
       {tickets.map((ticket) => {
         const selected = selectedIds.includes(ticket.id);
 
         return (
-          <article key={ticket.id}>
+          <article className="ticket-card" key={ticket.id}>
             <input
+              className="ticket-checkbox"
               type="checkbox"
               checked={selected}
               onChange={() => onToggle(ticket.id)}
             />
 
-            <div>
-              <h3>{ticket.subject}</h3>
+            <div className="ticket-content">
+              <h3 className="ticket-subject">
+                {ticket.subject}
+              </h3>
 
-              <p>{ticket.body.slice(0, 180)}...</p>
+              <p className="ticket-preview">
+                {ticket.body.length > 180
+                  ? `${ticket.body.slice(0, 180)}...`
+                  : ticket.body}
+              </p>
 
-              <small>
-                {ticket.channel} · {ticket.id}
-              </small>
+              <div className="ticket-meta">
+                <span>{ticket.id}</span>
+                <span>•</span>
+                <span>{ticket.channel}</span>
+              </div>
             </div>
           </article>
         );

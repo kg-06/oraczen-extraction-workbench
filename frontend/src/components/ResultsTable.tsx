@@ -11,14 +11,20 @@ export default function ResultsTable({
   results,
   onSelect,
 }: ResultsTableProps) {
-  return (
-    <div>
-      <h2>Extraction Results</h2>
+  if (results.length === 0) {
+    return (
+      <div className="results-card">
+        <div className="empty-state">
+          No extraction results are available.
+        </div>
+      </div>
+    );
+  }
 
-      {results.length === 0 ? (
-        <p>No results yet.</p>
-      ) : (
-        <table>
+  return (
+    <div className="results-card">
+      <div className="results-table-wrapper">
+        <table className="results-table">
           <thead>
             <tr>
               <th>Ticket</th>
@@ -34,42 +40,58 @@ export default function ResultsTable({
           <tbody>
             {results.map((result) => (
               <tr
+                className="result-row"
                 key={result.id}
                 onClick={() => onSelect(result)}
-                style={{ cursor: "pointer" }}
               >
-                <td>{result.ticket_id}</td>
-
-                <td>{result.status}</td>
-
                 <td>
-                  {result.record?.company ?? "-"}
+                  <span className="ticket-id">
+                    {result.ticket_id}
+                  </span>
                 </td>
 
                 <td>
-                  {result.record?.product ?? "-"}
+                  <span
+                    className={
+                      result.status === "completed"
+                        ? "badge badge-success"
+                        : "badge badge-warning"
+                    }
+                  >
+                    {result.status === "completed"
+                      ? "Completed"
+                      : "Needs review"}
+                  </span>
                 </td>
 
-                <td>
-                  {result.record?.category ?? "-"}
-                </td>
+                <td>{result.record?.company ?? "—"}</td>
+
+                <td>{result.record?.product ?? "—"}</td>
+
+                <td>{result.record?.category ?? "—"}</td>
+
+                <td>{result.record?.severity ?? "—"}</td>
 
                 <td>
-                  {result.record?.severity ?? "-"}
-                </td>
-
-                <td>
-                  {result.status === "needs_review"
-                    ? "Needs review"
-                    : result.human_edited
-                      ? "Human edited"
-                      : "OK"}
+                  {result.human_edited ? (
+                    <span className="badge badge-info">
+                      Human edited
+                    </span>
+                  ) : result.status === "needs_review" ? (
+                    <span className="badge badge-warning">
+                      Review needed
+                    </span>
+                  ) : (
+                    <span className="badge badge-neutral">
+                      OK
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      )}
+      </div>
     </div>
   );
 }

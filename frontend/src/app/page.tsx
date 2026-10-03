@@ -24,7 +24,9 @@ export default function Home() {
 
   const [processing, setProcessing] = useState(false);
   const [job, setJob] = useState<Job | null>(null);
-  const [jobError, setJobError] = useState<string | null>(null);
+  const [jobError, setJobError] = useState<string | null>(
+    null,
+  );
 
   const [results, setResults] = useState<JobResult[]>([]);
   const [selectedResult, setSelectedResult] =
@@ -203,98 +205,257 @@ export default function Home() {
       )
     : null;
 
+  const progress =
+    job && job.total > 0
+      ? Math.round((job.processed / job.total) * 100)
+      : 0;
+
   if (loading) {
-    return <main>Loading tickets...</main>;
+    return (
+      <div className="loading-state">
+        Loading tickets...
+      </div>
+    );
   }
 
   if (error) {
-    return <main>{error}</main>;
+    return (
+      <div className="loading-state">
+        {error}
+      </div>
+    );
   }
 
   return (
-    <main>
-      <h1>Extraction Workbench</h1>
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="brand">
+          <div className="brand-mark">EW</div>
 
-      <p>
-        {tickets.length} tickets · {selectedIds.length} selected
-      </p>
+          <div>
+            <div className="brand-title">
+              Extraction Workbench
+            </div>
 
-      <div>
-        <input
-          type="text"
-          placeholder="Search tickets..."
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
+            <div className="brand-subtitle">
+              AI-assisted ticket processing
+            </div>
+          </div>
+        </div>
+      </header>
 
-        <select
-          value={channel}
-          onChange={(event) => setChannel(event.target.value)}
-        >
-          <option value="all">All channels</option>
-          <option value="email">Email</option>
-          <option value="call">Call</option>
-          <option value="chat">Chat</option>
-        </select>
-      </div>
+      <main className="page">
+        <header className="page-header">
+          <div>
+            <h1 className="page-title">
+              Support Ticket Workbench
+            </h1>
 
-      <div>
-        <button onClick={selectAllVisible}>
-          Select Visible
-        </button>
+            <p className="page-description">
+              Select tickets, extract structured data, and
+              review uncertain results before export.
+            </p>
+          </div>
+        </header>
 
-        <button onClick={clearSelection}>
-          Clear Selection
-        </button>
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-label">
+              Total tickets
+            </div>
 
-        <button
-          disabled={selectedIds.length === 0 || processing}
-          onClick={processSelected}
-        >
-          {processing ? "Starting..." : "Process Selected"}
-        </button>
-      </div>
+            <div className="stat-value">
+              {tickets.length}
+            </div>
+          </div>
 
-      {jobError && <p>{jobError}</p>}
+          <div className="stat-card">
+            <div className="stat-label">
+              Selected
+            </div>
 
-      {job && (
-        <section>
-          <h2>Extraction Job</h2>
+            <div className="stat-value">
+              {selectedIds.length}
+            </div>
+          </div>
 
-          <p>Job ID: {job.id}</p>
+          <div className="stat-card">
+            <div className="stat-label">
+              Processed
+            </div>
 
-          <p>Status: {job.status}</p>
+            <div className="stat-value">
+              {job?.processed ?? 0}
+            </div>
+          </div>
 
-          <p>
-            {job.processed} / {job.total} processed
+          <div className="stat-card">
+            <div className="stat-label">
+              Needs review
+            </div>
+
+            <div className="stat-value">
+              {job?.needs_review ?? 0}
+            </div>
+          </div>
+        </div>
+
+        <section className="toolbar">
+          <div className="toolbar-row">
+            <div className="search-wrapper">
+              <input
+                className="search-input"
+                type="text"
+                placeholder="Search by ticket ID, subject, or content..."
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+              />
+            </div>
+
+            <select
+              className="filter-select"
+              value={channel}
+              onChange={(event) =>
+                setChannel(event.target.value)
+              }
+            >
+              <option value="all">All channels</option>
+              <option value="email">Email</option>
+              <option value="call">Call</option>
+              <option value="chat">Chat</option>
+            </select>
+          </div>
+
+          <div className="toolbar-actions">
+            <button
+              className="btn btn-secondary"
+              onClick={selectAllVisible}
+            >
+              Select visible
+            </button>
+
+            <button
+              className="btn btn-secondary"
+              onClick={clearSelection}
+            >
+              Clear selection
+            </button>
+
+            <button
+              className="btn btn-primary"
+              disabled={
+                selectedIds.length === 0 || processing
+              }
+              onClick={processSelected}
+            >
+              {processing
+                ? "Starting..."
+                : `Process selected${
+                    selectedIds.length
+                      ? ` (${selectedIds.length})`
+                      : ""
+                  }`}
+            </button>
+          </div>
+        </section>
+
+        {jobError && (
+          <p className="error-message">
+            {jobError}
           </p>
+        )}
 
-          <p>Completed: {job.completed}</p>
+        {job && (
+          <section className="job-card">
+            <div className="job-header">
+              <div>
+                <h2 className="job-title">
+                  Extraction job
+                </h2>
 
-          <p>Needs review: {job.needs_review}</p>
+                <div className="job-id">
+                  {job.id}
+                </div>
+              </div>
 
-          {job.status !== "completed" && (
-            <p>Processing tickets...</p>
-          )}
+              <span className="job-status">
+                {job.status}
+              </span>
+            </div>
 
-          {job.status === "completed" && (
-            <p>Extraction completed.</p>
-          )}
-        </section>
-      )}
+            <div className="progress-track">
+              <div
+                className="progress-bar"
+                style={{
+                  width: `${progress}%`,
+                }}
+              />
+            </div>
 
-      {job?.status === "completed" && (
-        <section>
-          <ResultsTable
-            results={results}
-            onSelect={setSelectedResult}
+            <div className="job-footer">
+              <span>
+                {job.processed} / {job.total} processed
+              </span>
+
+              <span>
+                {job.completed} completed ·{" "}
+                {job.needs_review} needs review
+              </span>
+            </div>
+          </section>
+        )}
+
+        {job?.status === "completed" && (
+          <section className="section">
+            <div className="section-header">
+              <div>
+                <h2 className="section-title">
+                  Extraction Results
+                </h2>
+
+                <div className="section-description">
+                  Click a result to review or edit it.
+                </div>
+              </div>
+
+              <button
+                className="btn btn-success"
+                onClick={handleExport}
+              >
+                Export CSV
+              </button>
+            </div>
+
+            <ResultsTable
+              results={results}
+              onSelect={setSelectedResult}
+            />
+          </section>
+        )}
+
+        <section className="section">
+          <div className="section-header">
+            <div>
+              <h2 className="section-title">
+                Tickets
+              </h2>
+
+              <div className="section-description">
+                Showing {filteredTickets.length} of{" "}
+                {tickets.length} tickets
+              </div>
+            </div>
+          </div>
+
+          <TicketList
+            tickets={filteredTickets}
+            selectedIds={selectedIds}
+            onToggle={toggleTicket}
           />
-
-          <button onClick={handleExport}>
-            Export CSV
-          </button>
         </section>
-      )}
+      </main>
 
       {selectedResult && selectedTicket && (
         <ReviewPanel
@@ -314,17 +475,6 @@ export default function Home() {
           }}
         />
       )}
-
-      <p>
-        Showing {filteredTickets.length} of{" "}
-        {tickets.length} tickets
-      </p>
-
-      <TicketList
-        tickets={filteredTickets}
-        selectedIds={selectedIds}
-        onToggle={toggleTicket}
-      />
-    </main>
+    </div>
   );
 }

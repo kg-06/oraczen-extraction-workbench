@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+
 import { updateRecord } from "@/lib/api";
 import { JobResult } from "@/types/extraction";
 import { Ticket } from "@/types/ticket";
@@ -63,19 +64,20 @@ export default function ReviewPanel({
 
     try {
       const updatedResult = await updateRecord(result.id, {
-            company,
-            product,
-            category,
-            severity,
-            requested_action: requestedAction,
-            refund_amount:
-              refundAmount === ""
-                ? null
-                : Number(refundAmount),
-            deadline:
-              deadline === "" ? null : deadline,
-            escalated,
-          });
+        company,
+        product,
+        category,
+        severity,
+        requested_action: requestedAction,
+        refund_amount:
+          refundAmount === ""
+            ? null
+            : Number(refundAmount),
+        deadline:
+          deadline === "" ? null : deadline,
+        escalated,
+      });
+
       onUpdated(updatedResult);
       setSaved(true);
     } catch (error) {
@@ -90,190 +92,290 @@ export default function ReviewPanel({
   }
 
   return (
-    <section>
-      <button onClick={onClose}>Close</button>
+    <div className="review-overlay">
+      <aside className="review-panel">
+        <header className="review-header">
+          <div>
+            <h2>Review {ticket.id}</h2>
 
-      <h2>Review Ticket {ticket.id}</h2>
+            <p>
+              Compare the source ticket with the extracted
+              record.
+            </p>
+          </div>
 
-      <div>
-        <h3>Original Ticket</h3>
+          <button className="btn" onClick={onClose}>
+            Close
+          </button>
+        </header>
 
-        <p>
-          <strong>Subject:</strong> {ticket.subject}
-        </p>
+        <div className="review-body">
+          <div className="review-grid">
+            <section className="review-card">
+              <h3>Original Ticket</h3>
 
-        <p>
-          <strong>Channel:</strong> {ticket.channel}
-        </p>
+              <div className="ticket-subject-large">
+                {ticket.subject || "No subject"}
+              </div>
 
-        <pre>{ticket.body}</pre>
-      </div>
+              <div className="ticket-meta">
+                <span>{ticket.channel}</span>
+                <span>•</span>
+                <span>{ticket.id}</span>
+              </div>
 
-      <div>
-        <h3>Extracted Data</h3>
+              <hr />
 
-        {!record && (
-          <p>
-            No valid extraction was produced. Enter the
-            missing information manually.
-          </p>
-        )}
+              <pre className="ticket-body">
+                {ticket.body || "No ticket body available."}
+              </pre>
+            </section>
 
-        <label>
-          Company
-          <input
-            value={company}
-            onChange={(event) =>
-              setCompany(event.target.value)
-            }
-          />
-        </label>
+            <section className="review-card">
+              <h3>
+                Extracted Data
+                {result.human_edited && (
+                  <span className="badge badge-info">
+                    Human edited
+                  </span>
+                )}
+              </h3>
 
-        <label>
-          Product
-          <select
-            value={product}
-            onChange={(event) =>
-              setProduct(event.target.value)
-            }
-          >
-            <option value="">Select product</option>
-            <option value="Zen Orchestrator">
-              Zen Orchestrator
-            </option>
-            <option value="Zen Studio">
-              Zen Studio
-            </option>
-            <option value="Zen Connect">
-              Zen Connect
-            </option>
-            <option value="Zen Insights">
-              Zen Insights
-            </option>
-            <option value="Zen Vault">
-              Zen Vault
-            </option>
-          </select>
-        </label>
+              {!record && (
+                <div className="validation-box">
+                  <h4>Manual review required</h4>
 
-        <label>
-          Category
-          <select
-            value={category}
-            onChange={(event) =>
-              setCategory(event.target.value)
-            }
-          >
-            <option value="">Select category</option>
-            <option value="outage">Outage</option>
-            <option value="billing">Billing</option>
-            <option value="bug">Bug</option>
-            <option value="feature_request">
-              Feature Request
-            </option>
-            <option value="how_to">How To</option>
-            <option value="churn_risk">
-              Churn Risk
-            </option>
-          </select>
-        </label>
-
-        <label>
-          Severity
-          <select
-            value={severity}
-            onChange={(event) =>
-              setSeverity(event.target.value)
-            }
-          >
-            <option value="">Select severity</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
-        </label>
-
-        <label>
-          Requested Action
-          <select
-            value={requestedAction}
-            onChange={(event) =>
-              setRequestedAction(event.target.value)
-            }
-          >
-            <option value="">Select action</option>
-            <option value="refund">Refund</option>
-            <option value="credit">Credit</option>
-            <option value="fix">Fix</option>
-            <option value="callback">Callback</option>
-            <option value="information">
-              Information
-            </option>
-            <option value="none">None</option>
-          </select>
-        </label>
-
-        <label>
-          Refund Amount
-          <input
-            type="number"
-            value={refundAmount}
-            onChange={(event) =>
-              setRefundAmount(event.target.value)
-            }
-          />
-        </label>
-
-        <label>
-          Deadline
-          <input
-            type="date"
-            value={deadline}
-            onChange={(event) =>
-              setDeadline(event.target.value)
-            }
-          />
-        </label>
-
-        <label>
-          <input
-            type="checkbox"
-            checked={escalated}
-            onChange={(event) =>
-              setEscalated(event.target.checked)
-            }
-          />
-
-          Escalated
-        </label>
-
-        {result.status === "needs_review" &&
-          result.validation_errors.length > 0 && (
-            <div>
-              <h3>Validation Errors</h3>
-
-              {result.validation_errors.map(
-                (validationError, index) => (
-                  <pre key={index}>
-                    {validationError}
-                  </pre>
-                ),
+                  <p className="validation-error">
+                    The extraction did not produce a valid
+                    record. Fill in the required fields
+                    manually.
+                  </p>
+                </div>
               )}
-            </div>
-          )}
 
-        {error && <p>{error}</p>}
+              <div className="form-grid">
+                <div className="form-field">
+                  <label className="form-label">
+                    Company
+                  </label>
 
-        {saved && <p>Changes saved.</p>}
+                  <input
+                    className="form-input"
+                    value={company}
+                    onChange={(event) =>
+                      setCompany(event.target.value)
+                    }
+                  />
+                </div>
 
-        <button
-          onClick={saveChanges}
-          disabled={saving}
-        >
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
-      </div>
-    </section>
+                <div className="form-field">
+                  <label className="form-label">
+                    Product
+                  </label>
+
+                  <select
+                    className="form-select"
+                    value={product}
+                    onChange={(event) =>
+                      setProduct(event.target.value)
+                    }
+                  >
+                    <option value="">
+                      Select product
+                    </option>
+                    <option value="Zen Orchestrator">
+                      Zen Orchestrator
+                    </option>
+                    <option value="Zen Studio">
+                      Zen Studio
+                    </option>
+                    <option value="Zen Connect">
+                      Zen Connect
+                    </option>
+                    <option value="Zen Insights">
+                      Zen Insights
+                    </option>
+                    <option value="Zen Vault">
+                      Zen Vault
+                    </option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">
+                    Category
+                  </label>
+
+                  <select
+                    className="form-select"
+                    value={category}
+                    onChange={(event) =>
+                      setCategory(event.target.value)
+                    }
+                  >
+                    <option value="">
+                      Select category
+                    </option>
+                    <option value="outage">Outage</option>
+                    <option value="billing">
+                      Billing
+                    </option>
+                    <option value="bug">Bug</option>
+                    <option value="feature_request">
+                      Feature Request
+                    </option>
+                    <option value="how_to">How To</option>
+                    <option value="churn_risk">
+                      Churn Risk
+                    </option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">
+                    Severity
+                  </label>
+
+                  <select
+                    className="form-select"
+                    value={severity}
+                    onChange={(event) =>
+                      setSeverity(event.target.value)
+                    }
+                  >
+                    <option value="">
+                      Select severity
+                    </option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">
+                      Critical
+                    </option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">
+                    Requested Action
+                  </label>
+
+                  <select
+                    className="form-select"
+                    value={requestedAction}
+                    onChange={(event) =>
+                      setRequestedAction(event.target.value)
+                    }
+                  >
+                    <option value="">
+                      Select action
+                    </option>
+                    <option value="refund">
+                      Refund
+                    </option>
+                    <option value="credit">
+                      Credit
+                    </option>
+                    <option value="fix">Fix</option>
+                    <option value="callback">
+                      Callback
+                    </option>
+                    <option value="information">
+                      Information
+                    </option>
+                    <option value="none">None</option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">
+                    Refund Amount
+                  </label>
+
+                  <input
+                    className="form-input"
+                    type="number"
+                    value={refundAmount}
+                    onChange={(event) =>
+                      setRefundAmount(event.target.value)
+                    }
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">
+                    Deadline
+                  </label>
+
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={deadline}
+                    onChange={(event) =>
+                      setDeadline(event.target.value)
+                    }
+                  />
+                </div>
+
+                <label className="checkbox-field">
+                  <input
+                    type="checkbox"
+                    checked={escalated}
+                    onChange={(event) =>
+                      setEscalated(event.target.checked)
+                    }
+                  />
+
+                  Escalated
+                </label>
+              </div>
+
+              {result.validation_errors.length > 0 && (
+                <div className="validation-box">
+                  <h4>Validation errors</h4>
+
+                  {result.validation_errors.map(
+                    (validationError, index) => (
+                      <pre
+                        className="validation-error"
+                        key={index}
+                      >
+                        {validationError}
+                      </pre>
+                    ),
+                  )}
+                </div>
+              )}
+
+              <div className="review-actions">
+                <div>
+                  {error && (
+                    <span className="error-message">
+                      {error}
+                    </span>
+                  )}
+
+                  {saved && (
+                    <span className="success-message">
+                      Changes saved successfully.
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  className="btn btn-primary"
+                  onClick={saveChanges}
+                  disabled={saving}
+                >
+                  {saving
+                    ? "Saving..."
+                    : "Save Changes"}
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </aside>
+    </div>
   );
 }
