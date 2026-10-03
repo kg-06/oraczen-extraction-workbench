@@ -1,4 +1,5 @@
 import { Ticket } from "@/types/ticket";
+import { JobResult } from "@/types/extraction";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -46,6 +47,20 @@ export async function getJob(jobId: string): Promise<Job> {
 
   if (!response.ok) {
     throw new Error("Failed to fetch job");
+  }
+
+  return response.json();
+}
+
+export async function getJobResults(
+  jobId: string,
+): Promise<JobResult[]> {
+  const response = await fetch(
+    `${API_URL}/api/jobs/${jobId}/results`,
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch job results");
   }
 
   return response.json();

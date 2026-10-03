@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 
 import TicketList from "@/components/TicketList";
-import { createJob, getJob, getTickets, Job } from "@/lib/api";
+import ResultsTable from "@/components/ResultsTable";
+import ReviewPanel from "@/components/ReviewPanel";
+
+import { createJob, getJob, getJobResults, getTickets, Job } from "@/lib/api";
+
+import { JobResult } from "@/types/extraction";
 import { Ticket } from "@/types/ticket";
 
 export default function Home() {
@@ -13,6 +18,9 @@ export default function Home() {
   const [processing, setProcessing] = useState(false);
   const [job, setJob] = useState<Job | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
+
+  const [results, setResults] = useState<JobResult[]>([]);
+  const [selectedResult, setSelectedResult] = useState<JobResult | null>(null);
 
   const [search, setSearch] = useState("");
   const [channel, setChannel] = useState("all");
@@ -34,6 +42,64 @@ export default function Home() {
 
     loadTickets();
   }, []);
+
+  const filteredTickets = useMemo(() => {
+    const query = search.toLowerCase().trim();
+
+    return tickets.filter((ticket) => {
+      const matchesSearch =
+        !query ||
+        ticket.id.toLowerCase().includes(query) ||
+        ticket.subject.toLowerCase().includes(query) ||
+        ticket.body.toLowerCase().includes(query);
+
+      const matchesChannel = channel === "all" || ticket.channel === channel;
+
+      return matchesSearch && matchesChannel;
+    });
+  }, [tickets, search, channel]);
+
+  function toggleTicket(ticketId: string) {
+    setSelectedIds((current) =>
+      current.includes(ticketId)
+        ? current.filter((id) => id !== ticketId)
+        : [...current, ticketId],
+    );
+  }
+
+  function selectAllVisible() {
+    const visibleIds = filteredTickets.map((ticket) => ticket.id);
+
+    setSelectedIds((current) => [...new Set([...current, ...visibleIds])]);
+  }
+
+  function clearSelection() {
+    setSelectedIds([]);
+  }
+
+  async function processSelected() {
+    if (selectedIds.length === 0 || processing) {
+      return;
+    }
+
+    setProcessing(true);
+    setJobError(null);
+    setResults([]);
+    setSelectedResult(null);
+
+    try {
+      const createdJob = await createJob(selectedIds);
+
+      setJob(createdJob);
+      setSelectedIds([]);
+    } catch (error) {
+      setJobError(
+        error instanceof Error ? error.message : "Failed to start extraction",
+      );
+    } finally {
+      setProcessing(false);
+    }
+  }
 
   useEffect(() => {
     if (!job || job.status === "completed") {
@@ -65,66 +131,30 @@ export default function Home() {
     };
   }, [job]);
 
-  const filteredTickets = useMemo(() => {
-    const query = search.toLowerCase().trim();
-
-    return tickets.filter((ticket) => {
-      const matchesSearch =
-        !query ||
-        ticket.id.toLowerCase().includes(query) ||
-        ticket.subject.toLowerCase().includes(query) ||
-        ticket.body.toLowerCase().includes(query);
-
-      const matchesChannel =
-        channel === "all" || ticket.channel === channel;
-
-      return matchesSearch && matchesChannel;
-    });
-  }, [tickets, search, channel]);
-
-  function toggleTicket(ticketId: string) {
-    setSelectedIds((current) =>
-      current.includes(ticketId)
-        ? current.filter((id) => id !== ticketId)
-        : [...current, ticketId],
-    );
-  }
-
-  function selectAllVisible() {
-    const visibleIds = filteredTickets.map((ticket) => ticket.id);
-
-    setSelectedIds((current) => [
-      ...new Set([...current, ...visibleIds]),
-    ]);
-  }
-
-  function clearSelection() {
-    setSelectedIds([]);
-  }
-
-  async function processSelected() {
-    if (selectedIds.length === 0 || processing) {
+  useEffect(() => {
+    if (!job || job.status !== "completed") {
       return;
     }
 
-    setProcessing(true);
-    setJobError(null);
+    const jobId = job.id;
 
-    try {
-      const createdJob = await createJob(selectedIds);
-
-      setJob(createdJob);
-      setSelectedIds([]);
-    } catch (error) {
-      setJobError(
-        error instanceof Error
-          ? error.message
-          : "Failed to start extraction",
-      );
-    } finally {
-      setProcessing(false);
+    async function loadResults() {
+      try {
+        const data = await getJobResults(jobId);
+        setResults(data);
+      } catch (error) {
+        setJobError(
+          error instanceof Error ? error.message : "Failed to load results",
+        );
+      }
     }
-  }
+
+    loadResults();
+  }, [job]);
+
+  const selectedTicket = selectedResult
+    ? tickets.find((ticket) => ticket.id === selectedResult.ticket_id)
+    : null;
 
   if (loading) {
     return <main>Loading tickets...</main>;
@@ -162,13 +192,9 @@ export default function Home() {
       </div>
 
       <div>
-        <button onClick={selectAllVisible}>
-          Select Visible
-        </button>
+        <button onClick={selectAllVisible}>Select Visible</button>
 
-        <button onClick={clearSelection}>
-          Clear Selection
-        </button>
+        <button onClick={clearSelection}>Clear Selection</button>
 
         <button
           disabled={selectedIds.length === 0 || processing}
@@ -192,22 +218,26 @@ export default function Home() {
             {job.processed} / {job.total} processed
           </p>
 
-          <p>
-            Completed: {job.completed}
-          </p>
+          <p>Completed: {job.completed}</p>
 
-          <p>
-            Needs review: {job.needs_review}
-          </p>
+          <p>Needs review: {job.needs_review}</p>
 
-          {job.status !== "completed" && (
-            <p>Processing tickets...</p>
-          )}
+          {job.status !== "completed" && <p>Processing tickets...</p>}
 
-          {job.status === "completed" && (
-            <p>Extraction completed.</p>
-          )}
+          {job.status === "completed" && <p>Extraction completed.</p>}
         </section>
+      )}
+
+      {job?.status === "completed" && (
+        <ResultsTable results={results} onSelect={setSelectedResult} />
+      )}
+
+      {selectedResult && selectedTicket && (
+        <ReviewPanel
+          result={selectedResult}
+          ticket={selectedTicket}
+          onClose={() => setSelectedResult(null)}
+        />
       )}
 
       <p>
