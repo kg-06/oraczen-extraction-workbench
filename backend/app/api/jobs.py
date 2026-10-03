@@ -47,6 +47,61 @@ def create_job(
             detail="At least one ticket must be selected",
         )
 
+    if len(request.ticket_ids) != len(set(request.ticket_ids)):
+        raise HTTPException(
+            status_code=400,
+            detail="Duplicate ticket IDs are not allowed",
+        )
+
+    available_ticket_ids = {
+        ticket.id
+        for ticket in job_service.tickets
+    }
+
+    invalid_ticket_ids = [
+        ticket_id
+        for ticket_id in request.ticket_ids
+        if ticket_id not in available_ticket_ids
+    ]
+
+    if invalid_ticket_ids:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "One or more ticket IDs are invalid",
+                "invalid_ticket_ids": invalid_ticket_ids,
+            },
+        )
+        
+    if not request.ticket_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one ticket must be selected",
+        )
+
+    if len(request.ticket_ids) != len(set(request.ticket_ids)):
+        raise HTTPException(
+            status_code=400,
+            detail="Duplicate ticket IDs are not allowed",
+        )
+
+    available_ticket_ids = {ticket.id for ticket in job_service.tickets}
+
+    invalid_ticket_ids = [
+        ticket_id
+        for ticket_id in request.ticket_ids
+        if ticket_id not in available_ticket_ids
+    ]
+
+    if invalid_ticket_ids:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "One or more ticket IDs are invalid",
+                "invalid_ticket_ids": invalid_ticket_ids,
+            },
+        )
+
     job = job_service.create_job(request.ticket_ids)
 
     background_tasks.add_task(

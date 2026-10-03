@@ -48,3 +48,63 @@ def test_get_nonexistent_job():
     )
 
     assert response.status_code == 404
+    
+def test_create_job_rejects_duplicate_ticket_ids():
+    response = client.post(
+        "/api/jobs",
+        json={
+            "ticket_ids": [
+                "tkt_0001",
+                "tkt_0001",
+            ]
+        },
+    )
+
+    assert response.status_code == 400
+    
+def test_create_job_rejects_unknown_ticket():
+    response = client.post(
+        "/api/jobs",
+        json={
+            "ticket_ids": [
+                "does-not-exist",
+            ]
+        },
+    )
+
+    assert response.status_code == 400
+    
+def test_create_job_rejects_empty_selection():
+    response = client.post(
+        "/api/jobs",
+        json={"ticket_ids": []},
+    )
+
+    assert response.status_code == 400
+
+
+def test_create_job_rejects_duplicate_ticket_ids():
+    response = client.post(
+        "/api/jobs",
+        json={
+            "ticket_ids": [
+                "tkt_0001",
+                "tkt_0001",
+            ]
+        },
+    )
+
+    assert response.status_code == 400
+
+
+def test_create_job_rejects_unknown_ticket():
+    response = client.post(
+        "/api/jobs",
+        json={
+            "ticket_ids": [
+                "does-not-exist",
+            ]
+        },
+    )
+
+    assert response.status_code == 400
