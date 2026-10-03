@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import TicketList from "@/components/TicketList";
-import { createJob, getTickets, Job } from "@/lib/api";
+import { createJob, getJob, getTickets, Job } from "@/lib/api";
 import { Ticket } from "@/types/ticket";
 
 export default function Home() {
@@ -34,6 +34,36 @@ export default function Home() {
 
     loadTickets();
   }, []);
+
+  useEffect(() => {
+    if (!job || job.status === "completed") {
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      try {
+        const updatedJob = await getJob(job.id);
+
+        setJob(updatedJob);
+
+        if (updatedJob.status === "completed") {
+          clearInterval(interval);
+        }
+      } catch (error) {
+        setJobError(
+          error instanceof Error
+            ? error.message
+            : "Failed to update job progress",
+        );
+
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [job]);
 
   const filteredTickets = useMemo(() => {
     const query = search.toLowerCase().trim();
@@ -148,11 +178,7 @@ export default function Home() {
         </button>
       </div>
 
-      {jobError && (
-        <p>
-          {jobError}
-        </p>
-      )}
+      {jobError && <p>{jobError}</p>}
 
       {job && (
         <section>
@@ -173,6 +199,14 @@ export default function Home() {
           <p>
             Needs review: {job.needs_review}
           </p>
+
+          {job.status !== "completed" && (
+            <p>Processing tickets...</p>
+          )}
+
+          {job.status === "completed" && (
+            <p>Extraction completed.</p>
+          )}
         </section>
       )}
 

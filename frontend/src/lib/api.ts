@@ -40,3 +40,13 @@ export async function createJob(ticketIds: string[]): Promise<Job> {
 
   return response.json();
 }
+
+export async function getJob(jobId: string): Promise<Job> {
+  const response = await fetch(`${API_URL}/api/jobs/${jobId}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch job");
+  }
+
+  return response.json();
+}
