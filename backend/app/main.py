@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from fastapi import FastAPI
-
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.jobs import router as jobs_router
 from app.api.jobs import set_job_service
 from app.api.tickets import router as tickets_router
@@ -15,6 +15,14 @@ from app.api.records import set_job_service as set_record_job_service
 
 
 app = FastAPI(title="Oraczen Extraction Workbench")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Load tickets
