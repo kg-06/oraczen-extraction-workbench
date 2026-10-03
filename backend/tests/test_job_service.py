@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 from app.models.ticket import Ticket
@@ -34,7 +32,7 @@ async def test_job_processes_selected_tickets():
         ["ticket_1", "ticket_2", "ticket_3"]
     )
 
-    await asyncio.sleep(0.05)
+    await job_service.run_job(job.id)
 
     updated_job = job_service.get_job(job.id)
 
@@ -59,8 +57,9 @@ async def test_job_tracks_needs_review():
     job = job_service.create_job(
         ["tkt_0004", "tkt_0020"]
     )
-
-    await asyncio.sleep(0.05)
+    
+    await job_service.run_job(job.id)
+    
 
     updated_job = job_service.get_job(job.id)
 
@@ -88,8 +87,8 @@ async def test_job_stores_extraction_results():
     job = job_service.create_job(
         ["ticket_1", "ticket_2"]
     )
-
-    await asyncio.sleep(0.05)
+    
+    await job_service.run_job(job.id)
 
     results = job_service.get_results(job.id)
 
@@ -114,9 +113,8 @@ async def test_job_stores_needs_review_result():
     job = job_service.create_job(
         ["tkt_0020"]
     )
-
-    await asyncio.sleep(0.05)
-
+    await job_service.run_job(job.id)
+    
     results = job_service.get_results(job.id)
 
     assert len(results) == 1

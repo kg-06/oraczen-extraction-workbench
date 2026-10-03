@@ -30,8 +30,6 @@ class JobService:
         self.jobs[job.id] = job
         self.results[job.id] = []
 
-        asyncio.create_task(self._run_job(job.id))
-
         return job
 
     def get_job(self, job_id: str) -> Job | None:
@@ -40,7 +38,7 @@ class JobService:
     def get_results(self, job_id: str) -> list[JobResult]:
         return self.results.get(job_id, [])
 
-    async def _run_job(self, job_id: str) -> None:
+    async def run_job(self, job_id: str) -> None:
         job = self.jobs[job_id]
         job.status = JobStatus.RUNNING
 
