@@ -1,4 +1,6 @@
 import asyncio
+import csv
+import io
 from uuid import uuid4
 
 from app.models.job import Job, JobStatus
@@ -108,3 +110,54 @@ class JobService:
                 return result
 
         return None
+    
+    def export_csv(self, job_id: str) -> str | None:
+        if job_id not in self.jobs:
+            return None
+
+        output = io.StringIO()
+
+        fieldnames = [
+        "ticket_id",
+        "company",
+        "product",
+        "category",
+        "severity",
+        "requested_action",
+        "refund_amount",
+        "deadline",
+        "escalated",
+        "human_edited",
+        "status",
+    ]
+
+        writer = csv.DictWriter(
+            output,
+            fieldnames=fieldnames,
+        )
+
+        writer.writeheader()
+
+        for result in self.results.get(job_id, []):
+            if result.record is None:
+                continue
+
+            record = result.record
+
+            writer.writerow(
+                {
+                "ticket_id": result.ticket_id,
+                "company": record.company,
+                "product": record.product.value,
+                "category": record.category.value,
+                "severity": record.severity.value,
+                "requested_action": record.requested_action.value,
+                "refund_amount": record.refund_amount,
+                "deadline": record.deadline,
+                "escalated": record.escalated,
+                "human_edited": result.human_edited,
+                "status": result.status,
+            }
+            )
+
+        return output.getvalue()

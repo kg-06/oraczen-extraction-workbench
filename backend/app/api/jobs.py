@@ -1,4 +1,10 @@
-from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    HTTPException,
+    Response,
+    status,
+)
 from pydantic import BaseModel
 
 from app.models.job import Job
@@ -86,3 +92,29 @@ def get_job_results(job_id: str):
         )
 
     return job_service.get_results(job_id)
+
+@router.get("/{job_id}/export.csv")
+def export_job_csv(job_id: str):
+    if job_service is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Job service is not initialized",
+        )
+
+    csv_content = job_service.export_csv(job_id)
+
+    if csv_content is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Job not found",
+        )
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="job-{job_id}.csv"'
+            )
+        },
+    )
