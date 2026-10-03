@@ -10,6 +10,8 @@ from app.providers.mock import MockExtractionProvider
 from app.services.extraction_service import ExtractionService
 from app.services.job_service import JobService
 from app.services.ticket_service import TicketService
+from app.api.records import router as records_router
+from app.api.records import set_job_service as set_record_job_service
 
 
 app = FastAPI(title="Oraczen Extraction Workbench")
@@ -35,12 +37,13 @@ job_service = JobService(
 )
 
 set_job_service(job_service)
+set_record_job_service(job_service)
 
 
 # Register routes
 app.include_router(tickets_router)
 app.include_router(jobs_router)
-
+app.include_router(records_router)
 
 @app.get("/health")
 def health():

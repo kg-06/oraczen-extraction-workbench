@@ -5,6 +5,7 @@ from app.models.job import Job, JobStatus
 from app.models.job_result import JobResult
 from app.models.ticket import Ticket
 from app.services.extraction_service import ExtractionService
+from app.models.extraction import ExtractedRecord
 
 
 class JobService:
@@ -56,6 +57,7 @@ class JobService:
 
                 self.results[job_id].append(
                     JobResult(
+                        id=str(uuid4()),
                         ticket_id=ticket.id,
                         status=result.status,
                         record=result.record,
@@ -76,3 +78,33 @@ class JobService:
         )
 
         job.status = JobStatus.COMPLETED
+        
+    def update_result(
+    self,
+    result_id: str,
+    updates: dict,
+) -> JobResult | None:
+
+        for results in self.results.values():
+            for result in results:
+
+                if result.id != result_id:
+                    continue
+
+                if result.record is None:
+                    return None
+
+                updated_data = result.record.model_dump()
+
+                for field, value in updates.items():
+                    if value is not None:
+                        updated_data[field] = value
+
+                updated_record = ExtractedRecord.model_validate(updated_data)
+
+                result.record = updated_record
+                result.human_edited = True
+
+                return result
+
+        return None
