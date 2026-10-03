@@ -3,12 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 
 import TicketList from "@/components/TicketList";
-import { getTickets } from "@/lib/api";
+import { createJob, getTickets, Job } from "@/lib/api";
 import { Ticket } from "@/types/ticket";
 
 export default function Home() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const [processing, setProcessing] = useState(false);
+  const [job, setJob] = useState<Job | null>(null);
+  const [jobError, setJobError] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
   const [channel, setChannel] = useState("all");
 
@@ -67,6 +72,30 @@ export default function Home() {
     setSelectedIds([]);
   }
 
+  async function processSelected() {
+    if (selectedIds.length === 0 || processing) {
+      return;
+    }
+
+    setProcessing(true);
+    setJobError(null);
+
+    try {
+      const createdJob = await createJob(selectedIds);
+
+      setJob(createdJob);
+      setSelectedIds([]);
+    } catch (error) {
+      setJobError(
+        error instanceof Error
+          ? error.message
+          : "Failed to start extraction",
+      );
+    } finally {
+      setProcessing(false);
+    }
+  }
+
   if (loading) {
     return <main>Loading tickets...</main>;
   }
@@ -111,10 +140,41 @@ export default function Home() {
           Clear Selection
         </button>
 
-        <button disabled={selectedIds.length === 0}>
-          Process Selected
+        <button
+          disabled={selectedIds.length === 0 || processing}
+          onClick={processSelected}
+        >
+          {processing ? "Starting..." : "Process Selected"}
         </button>
       </div>
+
+      {jobError && (
+        <p>
+          {jobError}
+        </p>
+      )}
+
+      {job && (
+        <section>
+          <h2>Extraction Job</h2>
+
+          <p>Job ID: {job.id}</p>
+
+          <p>Status: {job.status}</p>
+
+          <p>
+            {job.processed} / {job.total} processed
+          </p>
+
+          <p>
+            Completed: {job.completed}
+          </p>
+
+          <p>
+            Needs review: {job.needs_review}
+          </p>
+        </section>
+      )}
 
       <p>
         Showing {filteredTickets.length} of {tickets.length} tickets
