@@ -6,7 +6,14 @@ import TicketList from "@/components/TicketList";
 import ResultsTable from "@/components/ResultsTable";
 import ReviewPanel from "@/components/ReviewPanel";
 
-import { createJob, getJob, getJobResults, getTickets, Job } from "@/lib/api";
+import {
+  createJob,
+  exportJob,
+  getJob,
+  getJobResults,
+  getTickets,
+  Job,
+} from "@/lib/api";
 
 import { JobResult } from "@/types/extraction";
 import { Ticket } from "@/types/ticket";
@@ -20,7 +27,8 @@ export default function Home() {
   const [jobError, setJobError] = useState<string | null>(null);
 
   const [results, setResults] = useState<JobResult[]>([]);
-  const [selectedResult, setSelectedResult] = useState<JobResult | null>(null);
+  const [selectedResult, setSelectedResult] =
+    useState<JobResult | null>(null);
 
   const [search, setSearch] = useState("");
   const [channel, setChannel] = useState("all");
@@ -53,7 +61,8 @@ export default function Home() {
         ticket.subject.toLowerCase().includes(query) ||
         ticket.body.toLowerCase().includes(query);
 
-      const matchesChannel = channel === "all" || ticket.channel === channel;
+      const matchesChannel =
+        channel === "all" || ticket.channel === channel;
 
       return matchesSearch && matchesChannel;
     });
@@ -68,9 +77,13 @@ export default function Home() {
   }
 
   function selectAllVisible() {
-    const visibleIds = filteredTickets.map((ticket) => ticket.id);
+    const visibleIds = filteredTickets.map(
+      (ticket) => ticket.id,
+    );
 
-    setSelectedIds((current) => [...new Set([...current, ...visibleIds])]);
+    setSelectedIds((current) => [
+      ...new Set([...current, ...visibleIds]),
+    ]);
   }
 
   function clearSelection() {
@@ -94,7 +107,9 @@ export default function Home() {
       setSelectedIds([]);
     } catch (error) {
       setJobError(
-        error instanceof Error ? error.message : "Failed to start extraction",
+        error instanceof Error
+          ? error.message
+          : "Failed to start extraction",
       );
     } finally {
       setProcessing(false);
@@ -144,7 +159,9 @@ export default function Home() {
         setResults(data);
       } catch (error) {
         setJobError(
-          error instanceof Error ? error.message : "Failed to load results",
+          error instanceof Error
+            ? error.message
+            : "Failed to load results",
         );
       }
     }
@@ -152,8 +169,38 @@ export default function Home() {
     loadResults();
   }, [job]);
 
+  async function handleExport() {
+    if (!job) {
+      return;
+    }
+
+    try {
+      const blob = await exportJob(job.id);
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `extraction-results-${job.id}.csv`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setJobError(
+        error instanceof Error
+          ? error.message
+          : "Failed to export results",
+      );
+    }
+  }
+
   const selectedTicket = selectedResult
-    ? tickets.find((ticket) => ticket.id === selectedResult.ticket_id)
+    ? tickets.find(
+        (ticket) => ticket.id === selectedResult.ticket_id,
+      )
     : null;
 
   if (loading) {
@@ -192,9 +239,13 @@ export default function Home() {
       </div>
 
       <div>
-        <button onClick={selectAllVisible}>Select Visible</button>
+        <button onClick={selectAllVisible}>
+          Select Visible
+        </button>
 
-        <button onClick={clearSelection}>Clear Selection</button>
+        <button onClick={clearSelection}>
+          Clear Selection
+        </button>
 
         <button
           disabled={selectedIds.length === 0 || processing}
@@ -222,14 +273,27 @@ export default function Home() {
 
           <p>Needs review: {job.needs_review}</p>
 
-          {job.status !== "completed" && <p>Processing tickets...</p>}
+          {job.status !== "completed" && (
+            <p>Processing tickets...</p>
+          )}
 
-          {job.status === "completed" && <p>Extraction completed.</p>}
+          {job.status === "completed" && (
+            <p>Extraction completed.</p>
+          )}
         </section>
       )}
 
       {job?.status === "completed" && (
-        <ResultsTable results={results} onSelect={setSelectedResult} />
+        <section>
+          <ResultsTable
+            results={results}
+            onSelect={setSelectedResult}
+          />
+
+          <button onClick={handleExport}>
+            Export CSV
+          </button>
+        </section>
       )}
 
       {selectedResult && selectedTicket && (
@@ -242,7 +306,9 @@ export default function Home() {
 
             setResults((current) =>
               current.map((result) =>
-                result.id === updatedResult.id ? updatedResult : result,
+                result.id === updatedResult.id
+                  ? updatedResult
+                  : result,
               ),
             );
           }}
@@ -250,7 +316,8 @@ export default function Home() {
       )}
 
       <p>
-        Showing {filteredTickets.length} of {tickets.length} tickets
+        Showing {filteredTickets.length} of{" "}
+        {tickets.length} tickets
       </p>
 
       <TicketList

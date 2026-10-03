@@ -100,3 +100,15 @@ export async function updateRecord(
 
   return response.json();
 }
+
+export async function exportJob(jobId: string): Promise<Blob> {
+  const response = await fetch(
+    `${API_URL}/api/jobs/${jobId}/export.csv`,
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to export results");
+  }
+
+  return response.blob();
+}
